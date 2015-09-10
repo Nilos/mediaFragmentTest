@@ -42,16 +42,20 @@ describe("", function () {
     document.body.innerHTML = "";
   });
 
-  it("sanity check", function (done) {
-    expect(canPlayVideos()).toEqual(true);
-
+  function loadSources(fragment) {
     sources.forEach(function (source) {
       var ele = document.createElement("source");
-      ele.setAttribute("src", source.src);
+      ele.setAttribute("src", source.src + fragment);
       ele.setAttribute("type", source.type);
 
       video.appendChild(ele);
     });
+  }
+
+  it("sanity check", function (done) {
+    expect(canPlayVideos()).toEqual(true);
+
+    loadSources("");
 
     listen(video, "timeupdate", function (event) {
       expect(event.target.currentTime).toBeLessThan(3);
@@ -66,16 +70,10 @@ describe("", function () {
   it("jumps to media fragment automatically", function (done) {
     expect(canPlayVideos()).toEqual(true);
 
-    sources.forEach(function (source) {
-      var ele = document.createElement("source");
-      ele.setAttribute("src", source.src + "#t=4");
-      ele.setAttribute("type", source.type);
-
-      video.appendChild(ele);
-    });
+    loadSources("#t=4");
 
     listen(video, "timeupdate", function (event) {
-      expect(event.target.currentTime).toBeGreaterThan(3.9);
+      expect(video.currentTime).toBeGreaterThan(3.9);
       done();
     });
 
@@ -87,13 +85,7 @@ describe("", function () {
   it("can jump before fragments", function (done) {
     expect(canPlayVideos()).toEqual(true);
 
-    sources.forEach(function (source) {
-      var ele = document.createElement("source");
-      ele.setAttribute("src", source.src + "#t=4");
-      ele.setAttribute("type", source.type);
-
-      video.appendChild(ele);
-    });
+    loadSources("#t=4");
 
     var firstUpdate = true;
 
