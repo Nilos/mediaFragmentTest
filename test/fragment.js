@@ -17,10 +17,33 @@ describe("", function () {
     { src: "http://techslides.com/demos/sample-videos/small.3gp", type:"video/3gp" }
   ];
 
+  var listeners = [];
+  function listen(element, type, cb) {
+    element.addEventListener(type, cb);
+    listeners.push({
+      type: type,
+      element: element,
+      cb: cb
+    });
+  }
+
+  var video;
+
+  beforeEach(function () {
+    video = document.createElement("video");
+  });
+
+  afterEach(function () {
+    video.pause();
+    video.src = "";
+    listeners.forEach(function (listener) {
+      listener.element.removeEventListener(listener.type, listener.cb);
+    });
+    document.body.innerHTML = "";
+  });
+
   it("sanity check", function (done) {
     expect(canPlayVideos()).toEqual(true);
-
-    var video = document.createElement("video");
 
     sources.forEach(function (source) {
       var ele = document.createElement("source");
@@ -30,11 +53,8 @@ describe("", function () {
       video.appendChild(ele);
     });
 
-    video.addEventListener("timeupdate", function (event) {
+    listen(video, "timeupdate", function (event) {
       expect(event.target.currentTime).toBeLessThan(3);
-      video.pause();
-      video.src = "";
-      document.body.innerHTML = "";
       done();
     });
 
@@ -46,7 +66,26 @@ describe("", function () {
   it("jumps to media fragment automatically", function (done) {
     expect(canPlayVideos()).toEqual(true);
 
-    var video = document.createElement("video");
+    sources.forEach(function (source) {
+      var ele = document.createElement("source");
+      ele.setAttribute("src", source.src + "#t=4");
+      ele.setAttribute("type", source.type);
+
+      video.appendChild(ele);
+    });
+
+    listen(video, "timeupdate", function (event) {
+      expect(event.target.currentTime).toBeGreaterThan(3.9);
+      done();
+    });
+
+    document.body.appendChild(video);
+    video.play();
+    expect(video.currentTime).toBe(0);
+  });
+
+  it("can jump before fragments", function (done) {
+    expect(canPlayVideos()).toEqual(true);
 
     sources.forEach(function (source) {
       var ele = document.createElement("source");
@@ -56,16 +95,22 @@ describe("", function () {
       video.appendChild(ele);
     });
 
-    video.addEventListener("timeupdate", function (event) {
-      expect(event.target.currentTime).toBeGreaterThan(3.9);
-      video.pause();
-      video.src = "";
-      document.body.innerHTML = "";
-      done();
+    var firstUpdate = true;
+
+    listen(video, "timeupdate", function (event) {
+      if (firstUpdate) {
+        video.currentTime = 1;
+        firstUpdate = false;
+      } else {
+        expect(video.currentTime).toBeGreaterThan(0.9);
+        expect(video.currentTime).toBeLessThan(1.5);
+        done();
+      }
     });
 
     document.body.appendChild(video);
     video.play();
     expect(video.currentTime).toBe(0);
   });
+
 });
