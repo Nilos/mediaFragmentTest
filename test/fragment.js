@@ -31,6 +31,7 @@ describe("", function () {
 
   beforeEach(function () {
     video = document.createElement("video");
+    video.setAttribute("controls", "");
   });
 
   afterEach(function () {
@@ -98,6 +99,55 @@ describe("", function () {
         expect(video.currentTime).toBeLessThan(1.5);
         done();
       }
+    });
+
+    document.body.appendChild(video);
+    video.play();
+    expect(video.currentTime).toBe(0);
+  });
+
+  it("can jump after fragments", function (done) {
+    expect(canPlayVideos()).toEqual(true);
+
+    loadSources("#t=1,3");
+
+    var firstUpdate = true;
+
+    listen(video, "timeupdate", function (event) {
+      if (firstUpdate) {
+        video.currentTime = 4;
+        firstUpdate = false;
+      } else {
+        expect(video.currentTime).toBeGreaterThan(3.9);
+        expect(video.currentTime).toBeLessThan(4.5);
+        done();
+      }
+    });
+
+    document.body.appendChild(video);
+    video.play();
+    expect(video.currentTime).toBe(0);
+  });
+
+  it("video ended on fragment end", function (done) {
+    expect(canPlayVideos()).toEqual(true);
+
+    loadSources("#t=1,3");
+
+    var firstUpdate = true;
+
+    listen(video, "timeupdate", function (event) {
+      console.log(video.currentTime);
+      expect(video.currentTime).toBeLessThan(3.5);
+    });
+
+    listen(video, "ended", function (event) {
+      expect(true).toEqual(false);
+      done();
+    });
+
+    listen(video, "pause", function (event) {
+      done();
     });
 
     document.body.appendChild(video);
